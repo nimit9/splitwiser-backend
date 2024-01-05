@@ -108,4 +108,14 @@ const verifyOTP = async (req: Request, res: Response) => {
     });
 };
 
-export { login, verifyOTP };
+const logout = (req: Request, res: Response) => {
+    res.clearCookie('otpToken');
+    res.clearCookie('token');
+
+    res.status(StatusCodes.OK).json({
+        msg: 'Logout Successfull',
+        success: true,
+    });
+};
+
+export { login, verifyOTP, logout };
