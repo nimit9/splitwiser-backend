@@ -8,9 +8,8 @@ import { LoginRequest } from '../interfaces/auth.interface';
 import { generateOtp, sendEmailOtp, sendMobileOtp } from '../utils/otp-util';
 import jwt from 'jsonwebtoken';
 
-interface DecodedOTPToken {
+interface IDecodedToken {
     userId: string;
-    otp: string;
 }
 
 const login = async (req: LoginRequest, res: Response) => {
@@ -23,19 +22,19 @@ const login = async (req: LoginRequest, res: Response) => {
     let user = await User.findOne({ [loginType]: req.body[loginType] });
 
     if (!user) {
-        user = await User.create(req.body);
+        user = await User.create({ ...req.body, otp });
+    } else {
+        user.otp = otp;
+        await user.save();
     }
 
-    console.log('otp', otp);
-
     const otpToken = jwt.sign(
-        { otp, userId: user._id },
+        { userId: user._id },
         process.env.JWT_OTP_SECRET!,
         {
             expiresIn: process.env.JWT_OTP_LIFETIME!,
         },
     );
-    console.log('otpToken', otpToken);
 
     switch (req.loginType) {
         case 'email':
@@ -55,6 +54,7 @@ const login = async (req: LoginRequest, res: Response) => {
     return res.status(StatusCodes.OK).json({
         message: `OTP sent to your ${req.loginType}`,
         otpToken,
+        success: true,
     });
 };
 const verifyOTP = async (req: Request, res: Response) => {
@@ -66,16 +66,17 @@ const verifyOTP = async (req: Request, res: Response) => {
 
     const { otpToken } = req.cookies;
 
-    let decodedToken: DecodedOTPToken = {
-        userId: '',
-        otp: '',
-    };
+    if (!otpToken) {
+        throw new BadRequestError('OTP expired, please try again');
+    }
+
+    let decodedToken: IDecodedToken = { userId: '' };
 
     try {
         decodedToken = jwt.verify(
             otpToken,
             process.env.JWT_OTP_SECRET!,
-        ) as DecodedOTPToken;
+        ) as IDecodedToken;
     } catch (err: any) {
         res.clearCookie('otpToken');
         res.clearCookie('token');
@@ -89,13 +90,14 @@ const verifyOTP = async (req: Request, res: Response) => {
     if (!user) {
         throw new UnAuthenticatedError('Invalid user');
     }
-    if (decodedToken.otp !== otp) {
+    if (user.otp !== otp) {
         throw new UnAuthenticatedError('Invalid otp entered');
     }
 
     const token = user.createJWT();
 
     user.isVerified = true;
+    user.otp = '';
     await user.save();
 
     res.cookie('token', token, { httpOnly: true });
@@ -105,6 +107,7 @@ const verifyOTP = async (req: Request, res: Response) => {
         msg: 'OTP Verified Successfully',
         user,
         token,
+        success: true,
     });
 };
 

@@ -42,5 +42,8 @@ export const errorHandlerMiddleware = (
         )} has to be unique`;
     }
     // res.status(500).json({"msg":err})
-    res.status(defaultError.statusCode).json({ msg: defaultError.msg });
+    res.status(defaultError.statusCode).json({
+        msg: defaultError.msg,
+        success: false,
+    });
 };

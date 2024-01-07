@@ -6,6 +6,7 @@ export interface IUser {
     phone?: string;
     email?: string;
     isVerified?: boolean;
+    otp?: string;
 }
 
 interface IUserDocument extends IUser, Document {
@@ -16,7 +17,6 @@ const UserSchema = new mongoose.Schema<IUser>(
     {
         name: {
             type: String,
-
             trim: true,
         },
         phone: {
@@ -38,6 +38,7 @@ const UserSchema = new mongoose.Schema<IUser>(
             type: Boolean,
             default: false,
         },
+        otp: String,
     },
     { timestamps: true },
 );

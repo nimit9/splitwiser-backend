@@ -8,10 +8,17 @@ import express from 'express';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import notFoundMiddleware from '../src/middlewares/not-found';
-
+import cors from 'cors';
 dotenv.config();
 
 const app = express();
+
+app.use(
+    cors({
+        origin: ['http://localhost:1234'],
+        credentials: true,
+    }),
+);
 
 if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('dev'));
