@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Error as MongooseError } from 'mongoose';
 
 import { MongoError } from 'mongodb';
+import { ApiResponse } from '../utils/ApiResponse';
 interface DefaultError {
     statusCode: number;
     msg: string;
@@ -42,8 +43,7 @@ export const errorHandlerMiddleware = (
         )} has to be unique`;
     }
     // res.status(500).json({"msg":err})
-    res.status(defaultError.statusCode).json({
-        msg: defaultError.msg,
-        success: false,
-    });
+    res.status(defaultError.statusCode).json(
+        new ApiResponse(defaultError.statusCode, {}, defaultError.msg),
+    );
 };

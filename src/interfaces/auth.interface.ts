@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { IUserDocument } from '../models/User';
 
 export interface LoginFields {
     phone?: string;
@@ -7,4 +8,7 @@ export interface LoginFields {
 
 export interface LoginRequest extends Request {
     loginType?: 'phone' | 'email';
+}
+export interface AuthRequest extends Request {
+    user?: IUserDocument;
 }

@@ -4,20 +4,23 @@ import UnAuthenticatedError from '../errors/unauthenticated';
 import User from '../models/User';
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { LoginRequest } from '../interfaces/auth.interface';
+import { AuthRequest, LoginRequest } from '../interfaces/auth.interface';
 import { generateOtp, sendEmailOtp, sendMobileOtp } from '../utils/otp-util';
 import jwt from 'jsonwebtoken';
+import { ApiResponse } from '../utils/ApiResponse';
 
 interface IDecodedToken {
     userId: string;
 }
 
 const login = async (req: LoginRequest, res: Response) => {
-    const { phone, email } = req.body;
+    console.log('szvss');
 
     const loginType = req.loginType!;
 
     const otp = generateOtp();
+
+    console.log('otp', otp);
 
     let user = await User.findOne({ [loginType]: req.body[loginType] });
 
@@ -79,7 +82,7 @@ const verifyOTP = async (req: Request, res: Response) => {
         ) as IDecodedToken;
     } catch (err: any) {
         res.clearCookie('otpToken');
-        res.clearCookie('token');
+        res.clearCookie('accessToken');
         if (err.expiredAt) {
             throw new BadRequestError('OTP expired, please try again');
         }
@@ -88,37 +91,48 @@ const verifyOTP = async (req: Request, res: Response) => {
     const user = await User.findById(decodedToken.userId);
 
     if (!user) {
-        throw new UnAuthenticatedError('Invalid user');
+        throw new BadRequestError('Invalid user');
     }
     if (user.otp !== otp) {
-        throw new UnAuthenticatedError('Invalid otp entered');
+        throw new BadRequestError('Invalid otp entered');
     }
 
-    const token = user.createJWT();
+    const accessToken = user.createJWT();
 
     user.isVerified = true;
     user.otp = '';
     await user.save();
 
-    res.cookie('token', token, { httpOnly: true });
+    res.cookie('accessToken', accessToken, { httpOnly: true });
     res.clearCookie('otpToken');
 
     res.status(StatusCodes.OK).json({
         msg: 'OTP Verified Successfully',
         user,
-        token,
+        accessToken: accessToken,
         success: true,
     });
 };
 
 const logout = (req: Request, res: Response) => {
     res.clearCookie('otpToken');
-    res.clearCookie('token');
+    res.clearCookie('accessToken');
 
-    res.status(StatusCodes.OK).json({
-        msg: 'Logout Successfull',
-        success: true,
-    });
+    res.status(StatusCodes.OK).json(
+        new ApiResponse(StatusCodes.OK, { success: true }, 'Logout Successful'),
+    );
 };
 
-export { login, verifyOTP, logout };
+const getCurrentUser = async (req: AuthRequest, res: Response) => {
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { user: req.user! },
+                'User fetched successfully',
+            ),
+        );
+};
+
+export { login, verifyOTP, logout, getCurrentUser };

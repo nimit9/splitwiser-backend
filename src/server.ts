@@ -1,6 +1,7 @@
 import 'express-async-errors';
 
-import authRouter from '../src/routes/authRouter';
+import authRouter from './routes/auth.router';
+import profileRouter from './routes/profile.router';
 import connectDB from '../src/db/connect';
 import dotenv from 'dotenv';
 import { errorHandlerMiddleware } from '../src/middlewares/error-handler';
@@ -28,6 +29,7 @@ app.use(express.json());
 
 // routes
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/profile', profileRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
